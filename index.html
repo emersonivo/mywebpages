@@ -1,0 +1,1030 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Ciclos de Estudo</title>
+<style>
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg:      #0e0e10;
+  --surface: #14141a;
+  --card:    #1a1a22;
+  --border:  #26263a;
+  --muted:   #38384e;
+  --text:    #e0e0ee;
+  --subtext: #55556a;
+  --dim:     #2e2e40;
+
+  --c0: #50e090;
+  --c1: #5ab8ff;
+  --c2: #c864f0;
+  --c3: #ff7c40;
+  --cr: #40d8d8;
+
+  --phase-color: var(--c0);
+
+  --mono: ui-monospace, 'SF Mono', 'Cascadia Code', 'Fira Mono', 'Consolas', monospace;
+  --sans: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', sans-serif;
+}
+
+html { background: var(--bg); }
+
+body {
+  font-family: var(--sans);
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;              /* fallback */
+  min-height: calc(var(--vh, 1vh) * 100); /* set by JS — fixes iOS Safari toolbar */
+  display: flex;
+  align-items: flex-start;
+  justify-content: center;
+  padding: 0 0 max(32px, env(safe-area-inset-bottom));
+  overflow-x: hidden;
+}
+
+.screen {
+  width: 100%;
+  max-width: 460px;
+  padding: 0 20px;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+}
+.screen.active { display: flex; }
+
+/* ══════════════════════════════════════
+   SCREEN CONFIG
+══════════════════════════════════════ */
+#screen-config { padding-top: 48px; gap: 0; }
+
+.config-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  margin-bottom: 32px;
+}
+.config-eyebrow {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--phase-color);
+}
+.config-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.block {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  margin-bottom: 14px;
+}
+.block-header {
+  padding: 12px 16px 10px;
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+.block-label {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--subtext);
+  flex-shrink: 0;
+}
+.block-hint {
+  font-size: 0.7rem;
+  color: var(--subtext);
+  text-align: right;
+}
+
+/* ── Linha de ciclos ── */
+.ciclos-row {
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+.ciclos-label {
+  flex: 1;
+  font-size: 0.92rem;
+  font-weight: 500;
+}
+.ciclos-label span {
+  display: block;
+  font-size: 0.7rem;
+  color: var(--subtext);
+  font-weight: 400;
+  margin-top: 2px;
+}
+
+.num-control {
+  display: flex;
+  align-items: center;
+  background: var(--dim);
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.num-btn {
+  background: transparent;
+  border: none;
+  color: var(--subtext);
+  font-size: 1.1rem;
+  width: 36px;
+  height: 36px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  flex-shrink: 0;
+}
+.num-btn:active { color: var(--text); }
+.num-val {
+  font-family: var(--mono);
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--text);
+  min-width: 30px;
+  text-align: center;
+  background: transparent;
+  border: none;
+  outline: none;
+  padding: 0 2px;
+  -webkit-tap-highlight-color: transparent;
+}
+.num-val::-webkit-inner-spin-button,
+.num-val::-webkit-outer-spin-button { -webkit-appearance: none; }
+.num-val[type=number] { -moz-appearance: textfield; }
+
+/* ── Linhas de fase ── */
+.phase-row {
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  padding: 11px 16px;
+  border-bottom: 1px solid var(--border);
+}
+.phase-row:last-child { border-bottom: none; }
+
+.phase-dot-cfg {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+.phase-name-input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text);
+  font-size: 0.9rem;
+  font-family: var(--sans);
+  padding: 4px 0;
+  min-width: 0;
+}
+.phase-name-input::placeholder { color: var(--subtext); }
+
+.dur-group {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+}
+.dur-input {
+  width: 46px;
+  background: var(--dim);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-family: var(--mono);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-align: center;
+  padding: 6px 4px;
+  outline: none;
+  transition: border-color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+}
+.dur-input:focus { border-color: var(--phase-color); }
+.dur-input::-webkit-inner-spin-button,
+.dur-input::-webkit-outer-spin-button { -webkit-appearance: none; }
+.dur-input[type=number] { -moz-appearance: textfield; }
+.dur-unit {
+  font-family: var(--mono);
+  font-size: 0.58rem;
+  color: var(--subtext);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  width: 22px;
+}
+
+/* ── Avançado ── */
+.advanced-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  margin-bottom: 10px;
+  padding: 4px 0;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  width: 100%;
+  background: none;
+  border: none;
+  text-align: left;
+}
+.adv-arrow {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  color: var(--subtext);
+  transition: transform 0.2s;
+  display: inline-block;
+}
+.advanced-toggle.open .adv-arrow { transform: rotate(90deg); }
+.adv-label {
+  font-family: var(--mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--subtext);
+}
+.advanced-body { width: 100%; display: none; margin-bottom: 10px; }
+.advanced-body.open { display: block; }
+
+.adv-row {
+  display: flex;
+  align-items: center;
+  padding: 11px 16px;
+  gap: 12px;
+  border-bottom: 1px solid var(--border);
+}
+.adv-row:last-child { border-bottom: none; }
+.adv-text { flex: 1; }
+.adv-text strong {
+  display: block;
+  font-size: 0.87rem;
+  font-weight: 500;
+  margin-bottom: 2px;
+}
+.adv-text small { font-size: 0.7rem; color: var(--subtext); }
+
+/* ── Botão iniciar ── */
+.btn-start-cfg {
+  width: 100%;
+  padding: 17px;
+  background: transparent;
+  border: 1.5px solid var(--phase-color);
+  color: var(--phase-color);
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s;
+  margin-top: 10px;
+  margin-bottom: 22px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.btn-start-cfg:active,
+.btn-start-cfg:hover {
+  background: var(--phase-color);
+  color: #0e0e10;
+  box-shadow: 0 0 28px rgba(80, 224, 144, 0.35); /* static glow; color-mix not in Safari <16.4 */
+}
+.config-note {
+  font-size: 0.7rem;
+  color: var(--subtext);
+  text-align: center;
+  line-height: 1.7;
+  padding-bottom: 20px;
+}
+
+/* ══════════════════════════════════════
+   SCREEN TIMER
+══════════════════════════════════════ */
+#screen-timer { padding-top: 36px; gap: 0; }
+
+.cycle-badge {
+  font-family: var(--mono);
+  font-size: 0.57rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  color: var(--dim);
+  margin-bottom: 24px;
+  min-height: 12px;
+}
+.cycle-badge span { color: var(--subtext); }
+
+.phase-label {
+  font-family: var(--mono);
+  font-size: 0.57rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--phase-color);
+  transition: color 0.5s;
+  margin-bottom: 5px;
+  min-height: 13px;
+}
+.phase-name {
+  font-size: 1.28rem;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-align: center;
+  min-height: 33px;
+  margin-bottom: 3px;
+}
+.phase-sub {
+  font-family: var(--mono);
+  font-size: 0.67rem;
+  color: var(--subtext);
+  letter-spacing: 0.06em;
+  min-height: 16px;
+  margin-bottom: 30px;
+}
+
+/* ── Relógio ── */
+.clock-scene {
+  position: relative;
+  width: 256px;
+  height: 256px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 24px;
+  flex-shrink: 0;
+}
+.arc-svg {
+  position: absolute;
+  inset: 0;
+  transform: rotate(-90deg);
+}
+.arc-track    { fill: none; stroke: var(--border); stroke-width: 2; }
+.arc-inner    { fill: none; stroke: var(--border); stroke-width: 1; opacity: 0.4; }
+.arc-progress {
+  fill: none;
+  stroke: var(--phase-color);
+  stroke-width: 3;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 1s linear, stroke 0.5s ease, filter 0.5s ease;
+  filter: drop-shadow(0 0 5px var(--phase-color));
+}
+.clock {
+  font-family: var(--mono);
+  font-size: 4.5rem;
+  font-weight: 700;
+  letter-spacing: -0.025em;
+  line-height: 1;
+  color: var(--text);
+  position: relative;
+  z-index: 1;
+  transition: color 0.4s;
+  user-select: none;
+}
+.clock.warning  { color: #f0a820; }
+.clock.critical { color: #f05050; animation: blink 0.65s ease-in-out infinite; }
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.3; }
+}
+
+/* ── Dots ── */
+.dots {
+  display: flex;
+  gap: 9px;
+  align-items: center;
+  margin-bottom: 36px;
+  flex-wrap: wrap;
+  justify-content: center;
+  max-width: 300px;
+}
+.dot {
+  width: 8px; height: 8px;
+  border-radius: 50%;
+  background: var(--border);
+  border: 1px solid var(--muted);
+  transition: all 0.35s ease;
+  flex-shrink: 0;
+}
+.dot.done   { background: var(--muted); border-color: var(--muted); transform: scale(0.75); }
+.dot.active { background: var(--phase-color); border-color: var(--phase-color);
+              transform: scale(1.3); box-shadow: 0 0 7px var(--phase-color); }
+
+/* ── Botões timer ── */
+.btn-primary {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  background: transparent;
+  border: 1.5px solid var(--phase-color);
+  color: var(--phase-color);
+  padding: 15px 52px;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background 0.18s, color 0.18s, box-shadow 0.18s, border-color 0.5s;
+  min-width: 210px;
+  margin-bottom: 12px;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.btn-primary:active,
+.btn-primary:hover:not(:disabled) {
+  background: var(--phase-color);
+  color: #0e0e10;
+  box-shadow: 0 0 22px rgba(80, 224, 144, 0.35); /* static glow; color-mix not in Safari <16.4 */
+}
+.btn-primary:disabled { border-color: var(--muted); color: var(--muted); cursor: default; }
+
+.btn-ghost {
+  font-family: var(--mono);
+  font-size: 0.59rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  background: transparent;
+  border: none;
+  color: var(--subtext);
+  padding: 9px 18px;
+  cursor: pointer;
+  transition: color 0.2s;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.btn-ghost:active,
+.btn-ghost:hover { color: var(--text); }
+
+.timer-actions { display: flex; gap: 4px; flex-wrap: wrap; justify-content: center; }
+
+.hr { width: 32px; height: 1px; background: var(--border); margin: 10px 0 13px; }
+
+.status {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  color: var(--subtext);
+  min-height: 18px;
+  text-align: center;
+  transition: color 0.3s;
+}
+.status.hi { color: var(--phase-color); }
+
+@media (max-height: 700px) {
+  #screen-timer   { padding-top: 20px; }
+  .phase-sub      { margin-bottom: 16px; }
+  .clock-scene    { width: 210px; height: 210px; margin-bottom: 14px; }
+  .clock          { font-size: 3.8rem; }
+  .dots           { margin-bottom: 22px; }
+  .cycle-badge    { margin-bottom: 14px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ════════ SCREEN: CONFIG ════════ -->
+<div id="screen-config" class="screen active">
+
+  <div class="config-header">
+    <div class="config-eyebrow">Ciclos de Estudo</div>
+    <div class="config-title">Configurações</div>
+  </div>
+
+  <!-- Ciclos -->
+  <div class="block">
+    <div class="block-header">
+      <span class="block-label">Repetições</span>
+      <span class="block-hint">Quantas vezes rodar o ciclo completo</span>
+    </div>
+    <div class="ciclos-row">
+      <div class="ciclos-label">
+        Nº de ciclos
+        <span>Varredura → Ativa → Recall → Descanso</span>
+      </div>
+      <div class="num-control">
+        <button class="num-btn" onclick="changeCiclos(-1)">−</button>
+        <input  class="num-val" type="number" id="inp-ciclos"
+                value="1" min="1" max="10" inputmode="numeric"
+                oninput="clampField(this,1,10)" onchange="clampField(this,1,10)">
+        <button class="num-btn" onclick="changeCiclos(+1)">+</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Fases -->
+  <div class="block" id="fases-block">
+    <div class="block-header">
+      <span class="block-label">Fases</span>
+      <span class="block-hint">Nome e duração em minutos</span>
+    </div>
+  </div>
+
+  <!-- Avançado -->
+  <button class="advanced-toggle" id="adv-toggle" onclick="toggleAdv()">
+    <span class="adv-arrow">▶</span>
+    <span class="adv-label">Configurações avançadas de áudio</span>
+  </button>
+  <div class="advanced-body" id="adv-body">
+    <div class="block">
+      <div class="adv-row">
+        <div class="adv-text">
+          <strong>Bips de aviso</strong>
+          <small>Quantidade de bips antes do fim de cada fase</small>
+        </div>
+        <div class="num-control">
+          <button class="num-btn" onclick="changeAdv('beep-count',-1)">−</button>
+          <input  class="num-val" type="number" id="inp-beep-count"
+                  value="3" min="1" max="10" inputmode="numeric"
+                  oninput="clampField(this,1,10)" onchange="clampField(this,1,10)">
+          <button class="num-btn" onclick="changeAdv('beep-count',+1)">+</button>
+        </div>
+      </div>
+      <div class="adv-row">
+        <div class="adv-text">
+          <strong>Aviso antecipado</strong>
+          <small>Segundos antes do fim de cada fase para soar os bips</small>
+        </div>
+        <div class="dur-group">
+          <input class="dur-input" type="number" id="inp-beep-warn"
+                 value="60" min="5" max="300" inputmode="numeric">
+          <span class="dur-unit">seg</span>
+        </div>
+      </div>
+      <div class="adv-row">
+        <div class="adv-text">
+          <strong>Aviso de reorganização</strong>
+          <small>Segundos antes de iniciar a próxima leitura</small>
+        </div>
+        <div class="dur-group">
+          <input class="dur-input" type="number" id="inp-reorg-warn"
+                 value="10" min="3" max="30" inputmode="numeric">
+          <span class="dur-unit">seg</span>
+        </div>
+      </div>
+      <div class="adv-row">
+        <div class="adv-text">
+          <strong>Tempo de reorganização</strong>
+          <small>Pausa entre as fases de leitura (seg)</small>
+        </div>
+        <div class="dur-group">
+          <input class="dur-input" type="number" id="inp-reorg-time"
+                 value="60" min="10" max="300" inputmode="numeric">
+          <span class="dur-unit">seg</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn-start-cfg" onclick="startFromConfig()">▶  INICIAR CICLOS</button>
+
+  <div class="config-note">
+    Para usar offline no iPhone: Safari → Compartilhar → Adicionar à Tela de Início.
+  </div>
+
+</div>
+
+<!-- ════════ SCREEN: TIMER ════════ -->
+<div id="screen-timer" class="screen">
+
+  <div class="cycle-badge" id="cycle-badge">&nbsp;</div>
+  <div class="phase-label" id="lbl">—</div>
+  <div class="phase-name"  id="pname">—</div>
+  <div class="phase-sub"   id="psub">&nbsp;</div>
+
+  <div class="clock-scene">
+    <svg class="arc-svg" viewBox="0 0 256 256" xmlns="http://www.w3.org/2000/svg">
+      <circle class="arc-track"    cx="128" cy="128" r="119"/>
+      <circle class="arc-inner"    cx="128" cy="128" r="108"/>
+      <circle class="arc-progress" cx="128" cy="128" r="119"
+              id="arc" stroke-dasharray="747.7" stroke-dashoffset="0"/>
+    </svg>
+    <div class="clock" id="clock">--:--</div>
+  </div>
+
+  <div class="dots" id="dots"></div>
+
+  <button class="btn-primary" id="btn-main" onclick="handleBtn()">▶  INICIAR</button>
+
+  <div class="timer-actions">
+    <button class="btn-ghost" id="btn-skip" onclick="skipPhase()">saltar fase →</button>
+    <button class="btn-ghost" onclick="goToConfig()">← configurar</button>
+  </div>
+
+  <div class="hr"></div>
+  <div class="status" id="st">&nbsp;</div>
+
+</div>
+
+<script>
+// ════════════════════════════════════════════
+//  DEFAULTS
+// ════════════════════════════════════════════
+const DEFAULTS = [
+  { nome: "Leitura de Varredura", dur: 20, cor: "var(--c0)", reorg: true  },
+  { nome: "Leitura Ativa",        dur: 25, cor: "var(--c1)", reorg: true  },
+  { nome: "Leitura de Recall",    dur: 10, cor: "var(--c2)", reorg: false },
+  { nome: "Descanso",             dur:  5, cor: "var(--c3)", reorg: false },
+];
+
+const CIRCUM = 2 * Math.PI * 119;  // r=119 → 747.7
+
+// ════════════════════════════════════════════
+//  BUILD SETTINGS ROWS
+// ════════════════════════════════════════════
+(function buildFaseRows() {
+  const block = document.getElementById('fases-block');
+  DEFAULTS.forEach((f, i) => {
+    const row = document.createElement('div');
+    row.className = 'phase-row';
+
+    // Dot usa inline style com a variável CSS resolvida em JS
+    const dotColors = ['#50e090','#5ab8ff','#c864f0','#ff7c40'];
+    row.innerHTML =
+      `<div class="phase-dot-cfg" style="background:${dotColors[i]};box-shadow:0 0 6px ${dotColors[i]}66"></div>` +
+      `<input class="phase-name-input" type="text" id="inp-nome-${i}"` +
+      ` value="${f.nome}" maxlength="40" autocomplete="off" autocorrect="off">` +
+      `<div class="dur-group">` +
+      `<input class="dur-input" type="number" id="inp-dur-${i}"` +
+      ` value="${f.dur}" min="1" max="180" inputmode="numeric">` +
+      `<span class="dur-unit">min</span>` +
+      `</div>`;
+    block.appendChild(row);
+  });
+})();
+
+// ════════════════════════════════════════════
+//  CONFIG CONTROLS
+// ════════════════════════════════════════════
+function clampField(el, min, max) {
+  const v = parseInt(el.value);
+  if (!isNaN(v)) el.value = Math.min(max, Math.max(min, v));
+}
+function changeCiclos(d) {
+  const el = document.getElementById('inp-ciclos');
+  el.value = Math.min(10, Math.max(1, (parseInt(el.value)||1) + d));
+}
+function changeAdv(id, d) {
+  const el = document.getElementById('inp-'+id);
+  el.value = Math.min(+el.max, Math.max(+el.min, (parseInt(el.value)||+el.min) + d));
+}
+function toggleAdv() {
+  document.getElementById('adv-toggle').classList.toggle('open');
+  document.getElementById('adv-body').classList.toggle('open');
+}
+
+function startFromConfig() {
+  // Lê fases
+  CFG.fases = DEFAULTS.map((f, i) => ({
+    nome:  (document.getElementById('inp-nome-'+i).value.trim()) || f.nome,
+    dur:   Math.max(1, parseInt(document.getElementById('inp-dur-'+i).value) || f.dur) * 60,
+    cor:   f.cor,
+    reorg: f.reorg,
+  }));
+  CFG.ciclos      = Math.max(1, parseInt(document.getElementById('inp-ciclos').value)||1);
+  CFG.beepCount   = Math.max(1, parseInt(document.getElementById('inp-beep-count').value)||3);
+  CFG.beepWarn    = Math.max(5, parseInt(document.getElementById('inp-beep-warn').value)||60);
+  CFG.reorgWarn   = Math.max(3, parseInt(document.getElementById('inp-reorg-warn').value)||10);
+  CFG.reorgTime   = Math.max(10,parseInt(document.getElementById('inp-reorg-time').value)||60);
+
+  showScreen('timer');
+  resetTimer();
+  previewFirstPhase();
+}
+
+function goToConfig() {
+  hardStop();
+  showScreen('config');
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById('screen-'+id).classList.add('active');
+  window.scrollTo(0, 0);
+}
+
+// ════════════════════════════════════════════
+//  CFG (config ativa)
+// ════════════════════════════════════════════
+const CFG = {
+  fases: [], ciclos: 1,
+  beepCount: 3, beepWarn: 60, reorgWarn: 10, reorgTime: 60,
+};
+
+// ════════════════════════════════════════════
+//  ÁUDIO — iOS unlock
+// ════════════════════════════════════════════
+let actx = null, audioOK = false;
+
+function unlockAudio() {
+  if (audioOK) return;
+  try {
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+
+    // Safari requires resume() inside the gesture stack
+    const resume = actx.state === 'suspended' ? actx.resume() : Promise.resolve();
+
+    resume.then(() => {
+      // Firefox iOS + older Safari need a real (not silent) tone to unlock.
+      // 20 Hz at near-zero gain is physically inaudible but satisfies the policy.
+      const o = actx.createOscillator();
+      const g = actx.createGain();
+      o.connect(g); g.connect(actx.destination);
+      o.frequency.value = 20;
+      g.gain.setValueAtTime(0.001, actx.currentTime);
+      o.start(actx.currentTime);
+      o.stop(actx.currentTime + 0.2);
+      o.onended = () => { audioOK = true; };
+    });
+  } catch(e) { console.warn('AudioContext:', e); }
+}
+
+function tone(freq, t, dur, vol) {
+  if (!actx || !audioOK) return;
+  try {
+    const o = actx.createOscillator(), g = actx.createGain();
+    o.connect(g); g.connect(actx.destination);
+    o.type = 'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0, t);
+    g.gain.linearRampToValueAtTime(vol||0.35, t+0.015);
+    g.gain.exponentialRampToValueAtTime(0.0001, t+dur);
+    o.start(t); o.stop(t+dur+0.03);
+  } catch(e) {}
+}
+
+function playBeeps(n, freq) {
+  if (!actx) return;
+  const t = actx.currentTime;
+  for (let i=0; i<n; i++) tone(freq||880, t+i*0.42, 0.28, 0.40);
+}
+
+function playBell() {
+  if (!actx) return;
+  const t = actx.currentTime;
+  [[523.25,0.00,0.38],[659.25,0.08,0.32],[783.99,0.16,0.26],[1046.5,0.26,0.18]]
+    .forEach(([f,dt,v]) => tone(f, t+dt, 3.5, v));
+}
+
+// ════════════════════════════════════════════
+//  ESTADO DO TIMER
+// ════════════════════════════════════════════
+let tid=null, phIdx=0, cyc=1, isReorg=false;
+let tLeft=0, tTotal=0, running=false, done=false, started=false;
+let bFired=false, rFired=false;
+
+function hardStop() {
+  clearInterval(tid); tid=null; running=false;
+}
+
+function resetTimer() {
+  hardStop();
+  phIdx=0; cyc=1; isReorg=false;
+  tLeft=0; tTotal=0; done=false; started=false;
+  bFired=false; rFired=false;
+  document.getElementById('btn-main').disabled    = false;
+  document.getElementById('btn-main').textContent = '▶  INICIAR';
+  document.getElementById('btn-skip').style.display = '';
+}
+
+function previewFirstPhase() {
+  const f = CFG.fases[0];
+  tLeft=f.dur; tTotal=f.dur;
+  render();
+}
+
+// ════════════════════════════════════════════
+//  DISPLAY
+// ════════════════════════════════════════════
+function fmt(s) {
+  return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+}
+
+function resolveVar(v) {
+  // converte var(--cx) → hex via getComputedStyle
+  const name = v.match(/var\((.+)\)/)?.[1];
+  if (!name) return v;
+  return getComputedStyle(document.documentElement).getPropertyValue(name).trim() || v;
+}
+
+function setColor(cssColor) {
+  document.documentElement.style.setProperty('--phase-color', cssColor);
+  const hex = resolveVar(cssColor);
+  const arc = document.getElementById('arc');
+  arc.style.stroke = hex;
+  arc.style.filter = `drop-shadow(0 0 5px ${hex})`;
+}
+
+function setStatus(msg, hi) {
+  const el = document.getElementById('st');
+  el.textContent = msg || '\u00a0';
+  el.className = 'status'+(hi?' hi':'');
+}
+
+function buildDots() {
+  const c = document.getElementById('dots');
+  c.innerHTML = '';
+  CFG.fases.forEach((_,i) => {
+    const d = document.createElement('div');
+    let cls = 'dot';
+    if (i < phIdx)            cls += ' done';
+    else if (i===phIdx&&!done) cls += ' active';
+    d.className = cls;
+    c.appendChild(d);
+  });
+}
+
+function render() {
+  const clk   = document.getElementById('clock');
+  const lbl   = document.getElementById('lbl');
+  const pname = document.getElementById('pname');
+  const psub  = document.getElementById('psub');
+  const badge = document.getElementById('cycle-badge');
+
+  // Badge de ciclo
+  badge.innerHTML = CFG.ciclos > 1 && !done
+    ? `CICLO <span>${cyc} / ${CFG.ciclos}</span>` : '&nbsp;';
+
+  // Relógio
+  clk.textContent = done ? '00:00' : fmt(tLeft);
+  clk.className = 'clock';
+  if (!done) {
+    if      (tLeft <= 10)           clk.classList.add('critical');
+    else if (tLeft <= CFG.beepWarn) clk.classList.add('warning');
+  }
+
+  // Conteúdo da fase
+  if (done) {
+    setColor(CFG.fases[CFG.fases.length-1].cor);
+    lbl.textContent   = 'COMPLETO';
+    pname.textContent = '🏁 Ciclo encerrado';
+    psub.textContent  = 'Excelente trabalho.';
+  } else if (isReorg) {
+    setColor('var(--cr)');
+    lbl.textContent   = 'REORGANIZAÇÃO';
+    pname.textContent = 'Organize seus materiais';
+    const next = CFG.fases[phIdx+1];
+    psub.textContent  = next ? '→  '+next.nome : '';
+  } else {
+    const f = CFG.fases[phIdx];
+    setColor(f.cor);
+    lbl.textContent   = 'FASE '+(phIdx+1)+' DE '+CFG.fases.length;
+    pname.textContent = f.nome;
+    psub.textContent  = fmt(f.dur)+' totais';
+  }
+
+  buildDots();
+  document.getElementById('arc').style.strokeDashoffset = tTotal > 0
+    ? CIRCUM * (1 - tLeft/tTotal) : 0;
+}
+
+// ════════════════════════════════════════════
+//  LÓGICA DO TIMER
+// ════════════════════════════════════════════
+function startPhase() {
+  bFired=false; rFired=false;
+  if (isReorg) {
+    tLeft=CFG.reorgTime; tTotal=CFG.reorgTime;
+    setStatus('Organize seus materiais...', false);
+  } else {
+    const f=CFG.fases[phIdx];
+    tLeft=f.dur; tTotal=f.dur;
+    setStatus('', false);
+  }
+  render();
+}
+
+function tick() {
+  if (!running) return;
+  tLeft = Math.max(0, tLeft-1);
+
+  if (!isReorg && tLeft===CFG.beepWarn && !bFired) {
+    bFired=true;
+    playBeeps(CFG.beepCount, 880);
+    setStatus('⚠  Faltam '+CFG.beepWarn+'s para encerrar a fase', true);
+  }
+  if (isReorg && tLeft===CFG.reorgWarn && !rFired) {
+    rFired=true;
+    playBeeps(CFG.beepCount, 660);
+    setStatus('⚡ Próxima fase em '+CFG.reorgWarn+'s!', true);
+  }
+
+  render();
+  if (tLeft <= 0) onEnd();
+}
+
+function onEnd() {
+  playBell();
+
+  if (isReorg) {
+    isReorg=false; phIdx++;
+    if (phIdx >= CFG.fases.length) { endAll(); return; }
+    setTimeout(() => {
+      setStatus('▶  '+CFG.fases[phIdx].nome+' iniciada', true);
+      startPhase();
+    }, 900);
+    return;
+  }
+
+  const fase   = CFG.fases[phIdx];
+  const isLast = phIdx >= CFG.fases.length-1;
+
+  if (isLast) {
+    // Fim do ciclo → próximo ou encerra
+    if (cyc < CFG.ciclos) {
+      cyc++; phIdx=0; isReorg=false;
+      setTimeout(() => {
+        setStatus('🔄 Ciclo '+cyc+' de '+CFG.ciclos+' iniciado', true);
+        startPhase();
+      }, 1200);
+    } else {
+      endAll();
+    }
+  } else if (fase.reorg) {
+    isReorg=true;
+    setTimeout(() => {
+      setStatus('⏸  Reorganização iniciada', false);
+      startPhase();
+    }, 900);
+  } else {
+    phIdx++;
+    setTimeout(() => {
+      setStatus('▶  '+CFG.fases[phIdx].nome+' iniciada', true);
+      startPhase();
+    }, 900);
+  }
+}
+
+function endAll() {
+  done=true; hardStop(); render();
+  setStatus('Parabéns! Todos os ciclos completos. 🏆', true);
+  document.getElementById('btn-main').disabled    = true;
+  document.getElementById('btn-main').textContent = '✓  COMPLETO';
+  document.getElementById('btn-skip').style.display = 'none';
+}
+
+// ════════════════════════════════════════════
+//  CONTROLES
+// ════════════════════════════════════════════
+function handleBtn() {
+  unlockAudio();   // ← dentro do gesto → iOS desbloqueado
+  if (done) return;
+  const btn = document.getElementById('btn-main');
+
+  if (!started) {
+    started=true; startPhase();
+    running=true; tid=setInterval(tick, 1000);
+    btn.textContent = '⏸  PAUSAR';
+    return;
+  }
+  if (!running) {
+    running=true; tid=setInterval(tick, 1000);
+    btn.textContent = '⏸  PAUSAR';
+  } else {
+    hardStop();
+    btn.textContent = '▶  CONTINUAR';
+    setStatus('Pausado', false);
+  }
+}
+
+function skipPhase() {
+  if (done || !started) return;
+  const wasRunning = running;
+  hardStop(); tLeft=0; onEnd();
+  if (wasRunning && !done) { running=true; tid=setInterval(tick, 1000); }
+}
+
+// ════════════════════════════════════════════
+//  iOS Safari viewport height fix
+//  100dvh / 100vh both report the *full* screen height on iOS, ignoring
+//  the browser chrome (address bar, tab bar). This sets --vh to the real
+//  *visible* pixel height so layout never hides behind the toolbar.
+// ════════════════════════════════════════════
+function setVH() {
+  document.documentElement.style.setProperty('--vh', (window.innerHeight * 0.01) + 'px');
+}
+setVH();
+window.addEventListener('resize', setVH);
+window.addEventListener('orientationchange', () => setTimeout(setVH, 100));
+</script>
+</body>
+</html>
